@@ -85,7 +85,7 @@
             </ul>
         </div>
         <button id="btn-start" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-10 rounded-full shadow-lg shadow-blue-500/30 transition transform hover:scale-105 active:scale-95 text-lg w-full max-w-[250px]">
-            MULAI PERJUANGAN
+            MULAI PERMAINAN
         </button>
     </div>
 
@@ -103,30 +103,35 @@
             </div>
         </header>
 
-        <!-- Area Penyakit (Atas) -->
-        <div class="flex-grow flex flex-col items-center justify-center relative w-full mt-2 mb-6">
-            <div class="text-center mb-2 w-full">
-                <p class="text-xs text-red-400 font-semibold tracking-widest uppercase mb-1">Ancaman Mendekat</p>
-            </div>
+        <!-- Container Tengah (Menggabungkan Penyakit & Pilihan agar terkunci berdekatan) -->
+        <div class="flex-grow flex flex-col items-center justify-center w-full pb-4">
             
-            <!-- Kartu Penyakit Aktif -->
-            <div id="disease-card" class="bg-red-950/80 border-2 border-red-500/50 rounded-2xl p-5 w-full max-w-[300px] aspect-[4/3] flex flex-col items-center justify-center text-center shadow-lg shadow-red-900/20 animate-slide-down">
-                <div class="text-4xl mb-3" id="disease-icon">🦠</div>
-                <h3 id="disease-name" class="text-xl font-bold text-red-200 mb-2">Penyakit Menular</h3>
-                <p id="disease-desc" class="text-sm text-red-300/80">Deskripsi gejala dan cara penularan akan muncul di sini.</p>
+            <!-- Area Penyakit -->
+            <div class="flex flex-col items-center justify-center relative w-full mb-8">
+                <div class="text-center mb-2 w-full">
+                    <p class="text-xs text-red-400 font-semibold tracking-widest uppercase mb-1">Ancaman Mendekat</p>
+                </div>
+                
+                <!-- Kartu Penyakit Aktif -->
+                <div id="disease-card" class="bg-red-950/80 border-2 border-red-500/50 rounded-2xl p-5 w-full max-w-[300px] aspect-[4/3] flex flex-col items-center justify-center text-center shadow-lg shadow-red-900/20 animate-slide-down">
+                    <div class="text-4xl mb-3" id="disease-icon">🦠</div>
+                    <h3 id="disease-name" class="text-xl font-bold text-red-200 mb-2">Penyakit Menular</h3>
+                    <p id="disease-desc" class="text-sm text-red-300/80">Deskripsi gejala dan cara penularan akan muncul di sini.</p>
+                </div>
             </div>
-        </div>
 
-        <!-- Area Kartu Pencegahan (Bawah) -->
-        <div class="w-full pb-8">
-            <div class="flex items-center justify-center space-x-2 mb-6">
-                <p class="text-center text-xs text-green-400 font-bold tracking-widest uppercase">Pilih Kartu Pencegahan</p>
+            <!-- Area Kartu Pencegahan -->
+            <div class="w-full">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <p class="text-center text-xs text-green-400 font-bold tracking-widest uppercase">Pilih Kartu Pencegahan</p>
+                </div>
+                
+                <!-- Container Tumpukan Kartu (Hand of Cards) -->
+                <div id="action-cards" class="flex justify-center items-end h-[150px] w-full px-2">
+                    <!-- Kartu pilihan akan diisi oleh JS -->
+                </div>
             </div>
             
-            <!-- Container Tumpukan Kartu (Hand of Cards) -->
-            <div id="action-cards" class="flex justify-center items-end h-[150px] w-full px-2">
-                <!-- Kartu pilihan akan diisi oleh JS -->
-            </div>
         </div>
     </div>
 
