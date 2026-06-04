@@ -224,7 +224,7 @@
             </div>
 
             <!-- Isi Pustaka (Bisa di-scroll) -->
-            <div class="p-3 pb-10 overflow-y-auto no-scrollbar flex-grow overscroll-contain touch-pan-y">
+            <div class="p-3 pb-32 overflow-y-auto no-scrollbar flex-grow overscroll-contain touch-pan-y">
                 
                 <div class="mb-6">
                     <h3 class="text-xs text-red-400 font-bold mb-3 border-b border-red-500/30 pb-1 tracking-wider uppercase">Ancaman (Penyakit)</h3>
@@ -241,8 +241,26 @@
                         <!-- Akan diisi JS -->
                     </div>
                 </div>
-
+                
+                <!-- Spacer kosong agar scroll lebih leluasa di HP -->
+                <div class="h-24 w-full flex items-end justify-center pb-4">
+                    <span class="text-xs text-slate-500">Akhir dari pustaka</span>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Preview Kartu Diperbesar (Lightbox) -->
+    <div id="card-preview-modal" class="absolute inset-0 z-[90] hidden flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-sm transition-opacity duration-300 opacity-0" onclick="closeCardPreview()">
+        <div id="card-preview-content" class="bg-slate-800 border-4 rounded-3xl p-6 flex flex-col items-center text-center transform scale-95 transition-transform duration-300 shadow-[0_0_40px_rgba(0,0,0,0.8)] max-w-[300px] w-full" onclick="event.stopPropagation()">
+            <div id="preview-image-container" class="w-48 h-48 mb-6 flex items-center justify-center bg-slate-900/50 rounded-2xl p-4 w-full">
+                <!-- Akan diisi JS -->
+            </div>
+            <h3 id="preview-title" class="text-2xl font-bold mb-3">Judul</h3>
+            <p id="preview-desc" class="text-sm text-gray-300 mb-6 leading-relaxed">Deskripsi</p>
+            <button onclick="closeCardPreview()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-10 rounded-full shadow-lg transition transform hover:scale-105 active:scale-95 w-full uppercase tracking-widest">
+                TUTUP
+            </button>
         </div>
     </div>
 
@@ -387,7 +405,13 @@
             btnCloseLibrary: document.getElementById('btn-close-library'),
             libraryContent: document.getElementById('library-content'),
             libraryDiseases: document.getElementById('library-diseases'),
-            libraryActions: document.getElementById('library-actions')
+            libraryActions: document.getElementById('library-actions'),
+            // Preview Elements
+            previewModal: document.getElementById('card-preview-modal'),
+            previewContent: document.getElementById('card-preview-content'),
+            previewImageContainer: document.getElementById('preview-image-container'),
+            previewTitle: document.getElementById('preview-title'),
+            previewDesc: document.getElementById('preview-desc')
         };
 
         const Buttons = {
@@ -655,7 +679,8 @@
             // Render Kartu Penyakit
             diseases.forEach(d => {
                 const card = document.createElement('div');
-                card.className = "bg-red-950/60 border border-red-500/40 rounded-lg p-1 flex flex-col items-center justify-start text-center aspect-[3/4] shadow-sm";
+                card.className = "bg-red-950/60 border border-red-500/40 rounded-lg p-1 flex flex-col items-center justify-start text-center aspect-[3/4] shadow-sm cursor-pointer transition transform hover:scale-105 active:scale-95";
+                card.onclick = () => openCardPreview(d, 'disease');
                 card.innerHTML = `
                     <div class="w-full h-8 sm:h-10 flex items-center justify-center mb-1 mt-1">
                         <img src="${d.name}.png" alt="${d.name}" class="max-w-full max-h-full object-contain drop-shadow-md" onerror="this.outerHTML='<span class=&quot;text-3xl drop-shadow-md&quot;>${d.icon}</span>'">
@@ -668,7 +693,8 @@
             // Render Kartu Pencegahan
             allActions.forEach(a => {
                 const card = document.createElement('div');
-                card.className = "bg-slate-800 border border-slate-500/60 rounded-lg p-1 flex flex-col items-center justify-start text-center aspect-[3/4] shadow-sm";
+                card.className = "bg-slate-800 border border-slate-500/60 rounded-lg p-1 flex flex-col items-center justify-start text-center aspect-[3/4] shadow-sm cursor-pointer transition transform hover:scale-105 active:scale-95";
+                card.onclick = () => openCardPreview(a, 'action');
                 card.innerHTML = `
                     <div class="w-full h-8 sm:h-10 flex items-center justify-center mb-1 mt-1">
                         <img src="${a.text}.png" alt="${a.text}" class="max-w-full max-h-full object-contain drop-shadow-md" onerror="this.outerHTML='<span class=&quot;text-3xl drop-shadow-md&quot;>${a.icon}</span>'">
@@ -679,6 +705,43 @@
             });
 
             isLibraryRendered = true;
+        }
+
+        // Fungsi Buka Preview Kartu
+        function openCardPreview(item, type) {
+            UI.previewModal.classList.remove('hidden');
+            UI.previewModal.classList.add('flex');
+
+            const isDisease = type === 'disease';
+            const colorClass = isDisease ? 'text-red-400' : 'text-slate-100';
+            const borderColor = isDisease ? 'border-red-500' : 'border-slate-400';
+            const itemName = isDisease ? item.name : item.text;
+            const itemDesc = isDisease ? item.desc : 'Kartu aksi untuk mencegah dan memutus rantai penularan.';
+
+            UI.previewContent.className = `bg-slate-800 border-4 ${borderColor} rounded-3xl p-6 flex flex-col items-center text-center transform scale-95 transition-transform duration-300 shadow-[0_0_40px_rgba(0,0,0,0.8)] max-w-[300px] w-full`;
+            
+            UI.previewImageContainer.innerHTML = `<img src="${itemName}.png" alt="${itemName}" class="max-w-full max-h-full object-contain drop-shadow-2xl" onerror="this.outerHTML='<span class=&quot;text-7xl drop-shadow-2xl&quot;>${item.icon}</span>'">`;
+            UI.previewTitle.className = `text-2xl font-bold mb-3 ${colorClass}`;
+            UI.previewTitle.innerText = itemName;
+            UI.previewDesc.innerText = itemDesc;
+
+            setTimeout(() => {
+                UI.previewModal.classList.remove('opacity-0');
+                UI.previewContent.classList.remove('scale-95');
+                UI.previewContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        // Fungsi Tutup Preview Kartu
+        window.closeCardPreview = function() {
+            UI.previewModal.classList.add('opacity-0');
+            UI.previewContent.classList.remove('scale-100');
+            UI.previewContent.classList.add('scale-95');
+
+            setTimeout(() => {
+                UI.previewModal.classList.add('hidden');
+                UI.previewModal.classList.remove('flex');
+            }, 300);
         }
 
         // Buka Pustaka
