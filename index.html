@@ -777,8 +777,11 @@
         Buttons.next.addEventListener('click', closeFeedbackAndContinue);
         
         // Mencegah scroll default pada body saat menyentuh untuk memperbaiki feel aplikasi web
+        // PERBAIKAN: Hanya cegah jika terdeteksi gestur pinch-to-zoom (cubit), jangan blokir scroll biasa
         document.addEventListener('touchmove', function (event) {
-            if (event.scale !== 1) { event.preventDefault(); }
+            if (event.scale !== undefined && event.scale !== 1) { 
+                event.preventDefault(); 
+            }
         }, { passive: false });
 
     </script>
