@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SI Hero Sehat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f172a; /* Slate 900 - Tema Midnight */
+            color: #f8fafc;
+            overflow: hidden; /* Mencegah scroll yang tidak diinginkan */
+            touch-action: manipulation; /* Optimasi sentuhan */
+        }
+
+        /* Animasi untuk kartu yang muncul */
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-down {
+            animation: slideDown 0.5s ease-out forwards;
+        }
+
+        /* Animasi untuk kartu yang dipilih */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .card-pop {
+            animation: pop 0.2s ease-in-out;
+        }
+
+        /* Styling Kartu Tumpuk (Hand of Cards) */
+        .hand-card {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), z-index 0s;
+            transform-origin: bottom center;
+        }
+        .hand-card:hover, .hand-card:focus, .hand-card:active {
+            transform: translateY(-30px) scale(1.1) rotate(0deg) !important;
+            z-index: 50 !important;
+            border-color: #60a5fa !important; /* Biru cerah saat dipilih */
+        }
+
+        /* Kelas untuk kartu yang diklik/dipilih */
+        .selected-card {
+            transform: translateY(-30px) scale(1.15) rotate(0deg) !important;
+            z-index: 60 !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.6) !important;
+        }
+        
+        /* Efek meredup untuk kartu yang tidak dipilih */
+        .dimmed-card {
+            opacity: 0.4 !important;
+            transform: translateY(10px) scale(0.9) !important;
+        }
+
+        /* Glassmorphism untuk popup */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85); /* Slate 800 dengan transparansi */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Gradien untuk tema malam */
+        .bg-midnight-gradient {
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+        }
+
+        /* Sembunyikan scrollbar tapi tetap bisa scroll jika perlu */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-midnight-gradient min-h-screen h-screen flex flex-col items-center justify-between p-4 sm:p-6 w-full max-w-md mx-auto relative select-none">
+
+    <!-- Layar Mulai -->
+    <div id="start-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 text-center glass-panel">
+        <h1 class="text-4xl font-bold text-blue-400 mb-2 tracking-wide uppercase">SI Hero Sehat</h1>
+        <h2 class="text-lg font-semibold text-gray-300 mb-6">Pahlawan Tangguh Berantas Penyakit</h2>
+        
+        <!-- Logo SI Hero Sehat -->
+        <img src="ChatGPT Image Jun 4, 2026, 06_08_12 AM.png" alt="Logo SI Hero Sehat" class="w-32 h-32 mb-6">
+
+        <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 mb-8 max-w-sm text-sm text-gray-300 text-left">
+            <p class="mb-2"><strong class="text-white">Misi:</strong> Bertahan dari wabah penyakit yang menyerang di tengah malam.</p>
+            <p class="mb-2"><strong class="text-white">Cara Bermain:</strong></p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Sebuah kartu <strong class="text-red-400">Penyakit</strong> akan muncul.</li>
+                <li>Pilih satu dari tiga kartu <strong class="text-green-400">Pencegahan</strong> di bawah untuk melawannya.</li>
+                <li>Jawaban benar = Poin bertambah.</li>
+                <li>Jawaban salah = Nyawa (Hati) berkurang.</li>
+            </ul>
+        </div>
+        <button id="btn-start" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-10 rounded-full shadow-lg shadow-blue-500/30 transition transform hover:scale-105 active:scale-95 text-lg w-full max-w-[250px]">
+            MULAI PERMAINAN
+        </button>
+    </div>
+
+    <!-- Area Permainan Utama -->
+    <div id="game-area" class="w-full h-full flex flex-col hidden opacity-0 transition-opacity duration-500">
+        
+        <!-- Header: Nyawa dan Skor -->
+        <header class="flex justify-between items-center w-full mb-4 px-2">
+            <div class="flex items-center space-x-1" id="health-container">
+                <!-- Hati akan diisi oleh JS -->
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Skor</span>
+                <span id="score" class="text-2xl font-bold text-blue-400 leading-none">0</span>
+            </div>
+        </header>
+
+        <!-- Container Tengah (Menggabungkan Penyakit & Pilihan agar terkunci berdekatan) -->
+        <div class="flex-grow flex flex-col items-center justify-center w-full pb-4">
+            
+            <!-- Area Penyakit -->
+            <div class="flex flex-col items-center justify-center relative w-full mb-8">
+                <div class="text-center mb-2 w-full">
+                    <p class="text-xs text-red-400 font-semibold tracking-widest uppercase mb-1">Ancaman Mendekat</p>
+                </div>
+                
+                <!-- Kartu Penyakit Aktif -->
+                <div id="disease-card" class="bg-red-950/80 border-2 border-red-500/50 rounded-2xl p-5 w-full max-w-[300px] aspect-[4/3] flex flex-col items-center justify-center text-center shadow-lg shadow-red-900/20 animate-slide-down">
+                    <div class="text-4xl mb-3" id="disease-icon">🦠</div>
+                    <h3 id="disease-name" class="text-xl font-bold text-red-200 mb-2">Penyakit Menular</h3>
+                    <p id="disease-desc" class="text-sm text-red-300/80">Deskripsi gejala dan cara penularan akan muncul di sini.</p>
+                </div>
+            </div>
+
+            <!-- Area Kartu Pencegahan -->
+            <div class="w-full">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <p class="text-center text-xs text-green-400 font-bold tracking-widest uppercase">Pilih Kartu Pencegahan</p>
+                </div>
+                
+                <!-- Container Tumpukan Kartu (Hand of Cards) -->
+                <div id="action-cards" class="flex justify-center items-end h-[150px] w-full px-2">
+                    <!-- Kartu pilihan akan diisi oleh JS -->
+                </div>
+
+                <!-- Container Konfirmasi (Awalnya Tersembunyi) -->
+                <div id="confirm-container" class="w-full flex justify-center items-center space-x-3 h-12 mt-6 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4">
+                    <button id="btn-cancel" class="bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold py-2.5 px-6 rounded-full shadow-lg transition transform hover:scale-105 active:scale-95 text-sm uppercase tracking-widest border border-slate-500/50">
+                        BATAL
+                    </button>
+                    <button id="btn-confirm" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2.5 px-8 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)] transition transform hover:scale-105 active:scale-95 text-sm uppercase tracking-widest border border-blue-300/50">
+                        GUNAKAN
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Modal Penjelasan (Feedback) -->
+    <div id="feedback-modal" class="absolute inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div id="feedback-content" class="bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center transform scale-95 opacity-0 transition-all duration-300">
+            <div id="feedback-icon" class="text-5xl mb-4">✅</div>
+            <h2 id="feedback-title" class="text-2xl font-bold mb-2">Tepat Sekali!</h2>
+            <div class="bg-slate-900/50 p-4 rounded-lg w-full mb-6">
+                <p id="feedback-text" class="text-sm text-gray-300 leading-relaxed">
+                    Penjelasan akan muncul di sini.
+                </p>
+            </div>
+            <button id="btn-next" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition w-full">
+                LANJUTKAN
+            </button>
+        </div>
+    </div>
+
+    <!-- Layar Game Over -->
+    <div id="game-over-screen" class="absolute inset-0 z-50 hidden flex-col items-center justify-center p-6 text-center glass-panel">
+        <h1 class="text-4xl font-bold text-red-500 mb-2">Gugur</h1>
+        <p class="text-gray-300 mb-6">Pertahananmu berhasil ditembus.</p>
+        
+        <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 mb-8 w-full max-w-xs flex flex-col items-center">
+            <span class="text-sm text-gray-400 mb-1">Skor Akhir</span>
+            <span id="final-score" class="text-5xl font-bold text-blue-400">0</span>
+        </div>
+        
+        <p class="text-sm text-gray-400 max-w-xs mb-8">
+            "Pendidikan dan literasi kesehatan adalah benteng pertahanan pertama kita."
+        </p>
+
+        <button id="btn-restart" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-10 rounded-full shadow-lg shadow-blue-500/30 transition transform hover:scale-105 active:scale-95 text-lg w-full max-w-[250px]">
+            COBA LAGI
+        </button>
+    </div>
+
+    <script>
+        // Data Base Penyakit dan Pencegahan
+        // Format: id, nama, icon, desc, id_pencegahan_benar, alasan_benar, alasan_salah_umum
+        const diseases = [
+            {
+                id: 'd1',
+                name: 'Influenza (Flu)',
+                icon: '🤧',
+                desc: 'Menular cepat lewat udara dari bersin atau batuk. Sering terjadi di musim pancaroba.',
+                correctActionId: 'a1',
+                explanation: 'Flu menyebar melalui droplet (percikan) di udara. Memakai masker medis dengan benar adalah tameng pertama yang paling efektif mencegah percikan tersebut masuk ke saluran pernapasan kita.',
+                failExplanation: 'Meskipun tindakan lain baik untuk kesehatan umum, virus flu menyebar sangat cepat melalui udara. Jika tidak menutupi saluran napas (hidung & mulut), risiko tertular sangat tinggi.'
+            },
+            {
+                id: 'd2',
+                name: 'Demam Berdarah (DBD)',
+                icon: '🦟',
+                desc: 'Ditimbulkan oleh gigitan nyamuk Aedes aegypti yang aktif di siang hari.',
+                correctActionId: 'a2',
+                explanation: 'Nyamuk penyebab DBD berkembang biak di air bersih yang menggenang. Dengan menerapkan gerakan 3M Plus (terutama menguras dan menutup tempat penampungan air), kita memutus rantai hidup nyamuk tersebut.',
+                failExplanation: 'Penyakit ini ditularkan secara spesifik melalui gigitan nyamuk, bukan kontak langsung dengan orang sakit atau udara. Fokus utamanya harus pada pemberantasan sarang nyamuk.'
+            },
+            {
+                id: 'd3',
+                name: 'Diare Kronis',
+                icon: '🤢',
+                desc: 'Infeksi saluran pencernaan karena bakteri, virus, atau parasit dari makanan kotor.',
+                correctActionId: 'a3',
+                explanation: 'Kuman penyebab diare sering berpindah dari tangan yang kotor ke makanan lalu ke mulut. Mencuci tangan pakai sabun di air mengalir ampuh membunuh kuman tersebut.',
+                failExplanation: 'Diare utamanya terkait dengan kebersihan tangan dan makanan (Fecal-oral). Perlindungan pernapasan atau nyamuk tidak akan menghentikan penyebaran kuman ke sistem pencernaanmu.'
+            },
+            {
+                id: 'd4',
+                name: 'Tuberculosis (TBC)',
+                icon: '🫁',
+                desc: 'Penyakit paru-paru menular kronis yang disebabkan oleh bakteri Mycobacterium.',
+                correctActionId: 'a4',
+                explanation: 'Bakteri TBC dapat bertahan berjam-jam di udara yang lembap dan gelap. Membuka jendela agar cahaya matahari masuk dan sirkulasi udara (ventilasi) lancar dapat mematikan kuman TBC di ruangan.',
+                failExplanation: 'TBC menular lewat udara. Rumah yang gelap dan pengap mempercepat penyebarannya. Perbaikan kualitas sirkulasi ruangan sangat krusial selain memakai masker.'
+            },
+            {
+                id: 'd5',
+                name: 'Mata Merah (Konjungtivitis)',
+                icon: '👁️',
+                desc: 'Mata menjadi merah, gatal, dan berair. Sangat menular lewat sentuhan langsung.',
+                correctActionId: 'a5',
+                explanation: 'Bakteri/virus mata merah sangat mudah menular jika kamu menyentuh mata penderita (atau benda yang mereka sentuh, spt handuk). Tidak berbagi barang pribadi adalah kunci.',
+                failExplanation: 'Penyakit ini menular utamanya melalui kontak langsung atau barang yang terkontaminasi cairan mata. Perlindungan pernapasan tidak relevan dalam kasus ini.'
+            },
+            {
+                id: 'd6',
+                name: 'COVID-19',
+                icon: '🦠',
+                desc: 'Virus pernapasan menular yang menyebar lewat droplet dan kontak fisik berdekatan.',
+                correctActionId: 'a6',
+                explanation: 'Selain masker, menjaga jarak aman (Social Distancing) minimal 1-2 meter sangat efektif meminimalkan risiko terhirupnya droplet dari orang yang terinfeksi saat berbicara atau batuk.',
+                failExplanation: 'Walau kebersihan dasar penting, virus ini sangat agresif menular antar manusia dalam jarak dekat. Mengabaikan jaga jarak membuat risiko paparan droplet sangat tinggi.'
+            },
+            {
+                id: 'd7',
+                name: 'Kudis (Scabies)',
+                icon: '🪲',
+                desc: 'Rasa gatal parah di malam hari akibat tungau yang hidup dan bertelur di bawah kulit.',
+                correctActionId: 'a7',
+                explanation: 'Tungau kudis bisa bertahan hidup di kasur dan pakaian. Mencuci sprei, handuk, dan pakaian dengan air panas secara rutin adalah satu-satunya cara membasmi sarang tungau.',
+                failExplanation: 'Ini adalah masalah parasit kulit eksternal. Cuci tangan atau masker tidak akan membantu jika tungau tersebut hidup di tempat tidur atau pakaianmu.'
+            },
+            {
+                id: 'd8',
+                name: 'Malaria',
+                icon: '🏕️',
+                desc: 'Demam hebat dan menggigil yang disebabkan parasit Plasmodium, ditularkan nyamuk Anopheles.',
+                correctActionId: 'a8',
+                explanation: 'Nyamuk Anopheles biasanya menggigit di malam hari. Tidur menggunakan kelambu berinsektisida adalah benteng perlindungan fisik terbaik di daerah endemis malaria.',
+                failExplanation: 'Berbeda dengan DBD yang nyamuknya aktif siang hari (menguras air bersih sangat penting), pencegahan utama malaria di malam hari adalah perlindungan diri fisik seperti kelambu saat tidur.'
+            },
+            {
+                id: 'd9',
+                name: 'Cacingan (Hookworm)',
+                icon: '🪱',
+                desc: 'Infeksi parasit cacing yang dapat masuk menembus pori-pori kulit dari tanah kotor.',
+                correctActionId: 'a9',
+                explanation: 'Larva cacing tambang hidup di tanah yang lembap dan terkontaminasi. Memakai alas kaki (sepatu/sandal) saat beraktivitas di luar adalah pencegahan paling mutlak.',
+                failExplanation: 'Infeksi ini masuk melalui pori-pori kulit kaki yang bersentuhan langsung dengan tanah. Menjaga kebersihan udara atau air genangan tidak berpengaruh pada parasit di tanah.'
+            },
+            {
+                id: 'd10',
+                name: 'Demam Tifoid (Tifus)',
+                icon: '🤒',
+                desc: 'Demam tinggi dan gangguan pencernaan karena bakteri Salmonella typhi di makanan kotor.',
+                correctActionId: 'a10',
+                explanation: 'Bakteri tifus menular lewat makanan atau minuman yang terkontaminasi tinja penderita. Memilih makanan matang yang dimasak sempurna dan higienis mematikan bakteri tersebut.',
+                failExplanation: 'Seperti diare, ini adalah penyakit saluran cerna. Namun, tifus sangat erat kaitannya dengan jajanan luar atau makanan mentah/kurang matang yang dihinggapi lalat pembawa bakteri.'
+            }
+        ];
+
+        // Daftar semua kemungkinan aksi pencegahan
+        const allActions = [
+            { id: 'a1', icon: '😷', text: 'Gunakan Masker Medis' },
+            { id: 'a2', icon: '🪣', text: 'Kuras & Tutup Air' },
+            { id: 'a3', icon: '🧼', text: 'Cuci Tangan Sabun' },
+            { id: 'a4', icon: '🪟', text: 'Buka Ventilasi Udara' },
+            { id: 'a5', icon: '🚫', text: 'Jangan Bagi Handuk' },
+            { id: 'a6', icon: '🧍↔️', text: 'Jaga Jarak (Prokes)' },
+            { id: 'a7', icon: '🛏️', text: 'Cuci Sprei Air Panas' },
+            { id: 'a8', icon: '⛺', text: 'Tidur Pakai Kelambu' },
+            { id: 'a9', icon: '👟', text: 'Pakai Alas Kaki' },
+            { id: 'a10', icon: '🍲', text: 'Pilih Makanan Matang' }
+        ];
+
+        // Elemen DOM
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-area'),
+            gameOver: document.getElementById('game-over-screen'),
+            modal: document.getElementById('feedback-modal')
+        };
+        
+        const UI = {
+            score: document.getElementById('score'),
+            healthContainer: document.getElementById('health-container'),
+            diseaseIcon: document.getElementById('disease-icon'),
+            diseaseName: document.getElementById('disease-name'),
+            diseaseDesc: document.getElementById('disease-desc'),
+            actionCards: document.getElementById('action-cards'),
+            diseaseCard: document.getElementById('disease-card'),
+            confirmContainer: document.getElementById('confirm-container'),
+            btnConfirm: document.getElementById('btn-confirm'),
+            btnCancel: document.getElementById('btn-cancel'),
+            // Modal elements
+            modalContent: document.getElementById('feedback-content'),
+            modalIcon: document.getElementById('feedback-icon'),
+            modalTitle: document.getElementById('feedback-title'),
+            modalText: document.getElementById('feedback-text'),
+            finalScore: document.getElementById('final-score')
+        };
+
+        const Buttons = {
+            start: document.getElementById('btn-start'),
+            next: document.getElementById('btn-next'),
+            restart: document.getElementById('btn-restart')
+        };
+
+        // State Permainan
+        let state = {
+            score: 0,
+            lives: 3,
+            currentDisease: null,
+            isPlaying: false,
+            selectedActionId: null
+        };
+
+        // Utilitas untuk mengacak array (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Render Nyawa (Hati)
+        function updateHealthUI() {
+            UI.healthContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('span');
+                heart.className = `text-2xl transition-all duration-300 ${i < state.lives ? 'text-red-500 scale-100' : 'text-slate-700 scale-75 opacity-50'}`;
+                heart.innerText = '❤️';
+                UI.healthContainer.appendChild(heart);
+            }
+        }
+
+        // Mulai Permainan Baru
+        function startGame() {
+            state.score = 0;
+            state.lives = 3;
+            state.isPlaying = true;
+            
+            UI.score.innerText = state.score;
+            updateHealthUI();
+            
+            // Transisi Layar
+            screens.start.classList.add('hidden');
+            screens.gameOver.classList.add('hidden');
+            
+            screens.game.classList.remove('hidden');
+            // Sedikit delay agar display:block ter-render sebelum transisi opacity
+            setTimeout(() => {
+                screens.game.classList.remove('opacity-0');
+                screens.game.classList.add('opacity-100');
+                nextRound();
+            }, 50);
+        }
+
+        // Game Over
+        function gameOver() {
+            state.isPlaying = false;
+            UI.finalScore.innerText = state.score;
+            
+            screens.game.classList.remove('opacity-100');
+            screens.game.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                screens.game.classList.add('hidden');
+                screens.gameOver.classList.remove('hidden');
+                screens.gameOver.classList.add('flex'); // Pastikan flex aktif
+            }, 500);
+        }
+
+        // Menyiapkan Ronde Berikutnya
+        function nextRound() {
+            if (!state.isPlaying) return;
+
+            // Reset state pilihan
+            state.selectedActionId = null;
+            UI.confirmContainer.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            UI.confirmContainer.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+
+            // 1. Pilih penyakit acak
+            const randomIndex = Math.floor(Math.random() * diseases.length);
+            state.currentDisease = diseases[randomIndex];
+
+            // 2. Render Info Penyakit dengan animasi ulang
+            UI.diseaseCard.classList.remove('animate-slide-down');
+            void UI.diseaseCard.offsetWidth; // Trigger reflow untuk reset animasi
+            
+            // Ganti Emoji dengan Gambar berdasar Nama Penyakit
+            UI.diseaseIcon.className = "mb-3 flex justify-center items-center w-full"; // Hilangkan text-4xl
+            UI.diseaseIcon.innerHTML = `<img src="${state.currentDisease.name}.png" alt="${state.currentDisease.name}" class="w-20 h-20 object-contain border-none outline-none shadow-none bg-transparent">`;
+            
+            UI.diseaseName.innerText = state.currentDisease.name;
+            UI.diseaseDesc.innerText = state.currentDisease.desc;
+            
+            UI.diseaseCard.classList.add('animate-slide-down');
+
+            // 3. Siapkan Pilihan (1 Benar, 3 Salah) - Dibuat 4 agar geser/swipe lebih asik
+            const correctAnswer = allActions.find(a => a.id === state.currentDisease.correctActionId);
+            const wrongAnswers = shuffleArray(allActions.filter(a => a.id !== state.currentDisease.correctActionId)).slice(0, 3);
+            
+            const options = shuffleArray([correctAnswer, ...wrongAnswers]);
+
+            // 4. Render Kartu Pilihan (Bentuk Tumpukan / Hand of Cards)
+            UI.actionCards.innerHTML = '';
+            
+            // Sudut rotasi dan offset Y untuk efek kipas (fan effect)
+            const angles = ['-12deg', '-4deg', '4deg', '12deg'];
+            const yOffsets = ['12px', '0px', '0px', '12px'];
+
+            options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                
+                // Overlap: Kartu ditarik ke kiri agar bertumpuk (-ml-12 ~ 48px)
+                // Menggunakan lebar/tinggi rasio kartu remi (2.5 : 3.5)
+                const overlapClass = index === 0 ? '' : '-ml-12 sm:-ml-10'; 
+                
+                btn.className = `hand-card ${overlapClass} relative w-[96px] h-[134px] sm:w-[104px] sm:h-[145px] bg-slate-800 border-[3px] border-slate-500 rounded-xl p-2 flex flex-col items-center justify-center text-center shadow-2xl shadow-black/80 outline-none group`;
+                
+                // Rotasi bawaan agar membentuk setengah lingkaran (kipas)
+                btn.style.transform = `rotate(${angles[index]}) translateY(${yOffsets[index]})`;
+                btn.style.zIndex = index + 10;
+                
+                // Konten HTML Tombol - Menggunakan Gambar berdasar Text Pencegahan
+                btn.innerHTML = `
+                    <div class="absolute top-1 left-1.5 w-4 h-4 opacity-70">
+                        <img src="${option.text}.png" alt="" class="w-full h-full object-contain border-none outline-none shadow-none bg-transparent">
+                    </div>
+                    <div class="absolute bottom-1 right-1.5 w-4 h-4 opacity-70 transform rotate-180">
+                        <img src="${option.text}.png" alt="" class="w-full h-full object-contain border-none outline-none shadow-none bg-transparent">
+                    </div>
+                    
+                    <div class="w-14 h-14 z-10 mb-1 transition-transform group-hover:scale-110 flex items-center justify-center">
+                        <img src="${option.text}.png" alt="${option.text}" class="w-full h-full object-contain border-none outline-none shadow-none bg-transparent">
+                    </div>
+                    <span class="font-bold text-[10px] sm:text-xs z-10 text-slate-100 leading-tight w-full px-1">${option.text}</span>
+                `;
+                
+                // Event Listener saat pemain memilih kartu
+                btn.onclick = () => {
+                    // Hapus seleksi dari semua kartu
+                    const allCards = document.querySelectorAll('.hand-card');
+                    allCards.forEach(c => {
+                        c.classList.remove('selected-card');
+                        c.classList.add('dimmed-card');
+                    });
+                    
+                    // Tambahkan efek fokus ke kartu yang ditekan
+                    btn.classList.remove('dimmed-card');
+                    btn.classList.add('selected-card');
+                    
+                    // Simpan ID kartu yang dipilih
+                    state.selectedActionId = option.id;
+                    
+                    // Munculkan tombol GUNAKAN
+                    UI.confirmContainer.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+                    UI.confirmContainer.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                };
+                
+                UI.actionCards.appendChild(btn);
+            });
+        }
+
+        // Event Listener untuk mengeksekusi kartu (Tombol Gunakan)
+        UI.btnConfirm.addEventListener('click', () => {
+            if (state.selectedActionId) {
+                // Sembunyikan tombol gunakan agar tidak di klik 2x
+                UI.confirmContainer.classList.add('opacity-0', 'pointer-events-none');
+                
+                const isCorrect = state.selectedActionId === state.currentDisease.correctActionId;
+                handleAnswer(isCorrect);
+            }
+        });
+
+        // Event Listener untuk membatalkan pilihan (Tombol Batal)
+        UI.btnCancel.addEventListener('click', () => {
+            // Sembunyikan container konfirmasi
+            UI.confirmContainer.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            UI.confirmContainer.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            
+            // Reset state pilihan
+            state.selectedActionId = null;
+
+            // Kembalikan semua kartu ke tampilan normal (hilangkan efek redup dan fokus)
+            const allCards = document.querySelectorAll('.hand-card');
+            allCards.forEach(c => {
+                c.classList.remove('selected-card', 'dimmed-card');
+            });
+        });
+
+        // Menangani Jawaban Pemain
+        function handleAnswer(isCorrect) {
+            // Tampilkan Modal
+            screens.modal.classList.remove('hidden');
+            
+            // Animasi masuk modal content
+            setTimeout(() => {
+                UI.modalContent.classList.remove('scale-95', 'opacity-0');
+                UI.modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            if (isCorrect) {
+                // Benar
+                state.score += 10;
+                UI.score.innerText = state.score;
+                
+                // Tambah animasi di skor
+                UI.score.classList.add('text-green-400', 'scale-125');
+                setTimeout(() => UI.score.classList.remove('text-green-400', 'scale-125'), 300);
+
+                // Setup UI Modal Benar
+                UI.modalIcon.innerText = '🛡️'; // Shield icon
+                UI.modalTitle.innerText = 'Pertahanan Berhasil!';
+                UI.modalTitle.className = 'text-2xl font-bold mb-2 text-green-400';
+                UI.modalText.innerHTML = `<strong>Tepat sekali!</strong><br><br>${state.currentDisease.explanation}`;
+                UI.modalContent.className = 'bg-slate-800 border-2 border-green-500/50 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center transform scale-100 opacity-100 transition-all duration-300';
+                Buttons.next.className = 'bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition w-full mt-4';
+            } else {
+                // Salah
+                state.lives--;
+                updateHealthUI();
+                
+                // Efek layar goyang ringan (shake)
+                document.body.style.transform = 'translateX(5px)';
+                setTimeout(() => document.body.style.transform = 'translateX(-5px)', 50);
+                setTimeout(() => document.body.style.transform = 'translateX(5px)', 100);
+                setTimeout(() => document.body.style.transform = 'translateX(0)', 150);
+
+                // Setup UI Modal Salah
+                UI.modalIcon.innerText = '⚠️';
+                UI.modalTitle.innerText = 'Pertahanan Tertembus!';
+                UI.modalTitle.className = 'text-2xl font-bold mb-2 text-red-400';
+                UI.modalText.innerHTML = `<strong>Tindakan kurang tepat.</strong><br><br>${state.currentDisease.failExplanation}<br><br><span class="text-xs text-blue-300 mt-2 block">Pencegahan terbaik adalah: ${allActions.find(a => a.id === state.currentDisease.correctActionId).text}</span>`;
+                UI.modalContent.className = 'bg-slate-800 border-2 border-red-500/50 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center transform scale-100 opacity-100 transition-all duration-300';
+                Buttons.next.className = 'bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition w-full mt-4';
+            }
+        }
+
+        // Tutup Modal & Lanjut / Game Over
+        function closeFeedbackAndContinue() {
+            // Animasi keluar modal content
+            UI.modalContent.classList.remove('scale-100', 'opacity-100');
+            UI.modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                screens.modal.classList.add('hidden');
+                
+                if (state.lives <= 0) {
+                    gameOver();
+                } else {
+                    nextRound();
+                }
+            }, 300); // Sesuaikan dengan durasi transisi CSS
+        }
+
+        // Event Listeners Utama
+        Buttons.start.addEventListener('click', startGame);
+        Buttons.restart.addEventListener('click', startGame);
+        Buttons.next.addEventListener('click', closeFeedbackAndContinue);
+        
+        // Mencegah scroll default pada body saat menyentuh untuk memperbaiki feel aplikasi web
+        document.addEventListener('touchmove', function (event) {
+            if (event.scale !== 1) { event.preventDefault(); }
+        }, { passive: false });
+
+    </script>
+</body>
+</html>
